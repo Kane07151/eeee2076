@@ -1,0 +1,9 @@
+git show
+
+git log
+
+git checkout / git switch
+
+git init
+
+git reset
