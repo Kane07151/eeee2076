@@ -1,7 +1,8 @@
 #include <iostream>
+#include "util.h"
 
 int main()
 {
-    std::cout << "Hello from WS4!" << std::endl;
+    std::cout << "2 + 3 = " << add(2, 3) << std::endl;
     return 0;
 }
