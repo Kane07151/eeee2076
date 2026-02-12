@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.12) 
+project(calc) 
+add_library(maths adder.cpp) 
+add_executable(calc calc.cpp) 
+target_link_libraries(calc maths) 
