@@ -1,7 +1,5 @@
 #include <iostream>
-#include "util.h"   
-int main() {
-    std::cout << "Hello\n";
-    say_hi();
+int main(int argc, char* argv[]) {
+    std::cout << "Hello Planet Earth!" << std::endl;
     return 0;
 }
