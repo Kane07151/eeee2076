@@ -1,16 +1,9 @@
-#ifndef MATHSLIB_ADDER_H
-#define MATHSLIB_ADDER_H
-
-#if defined(_WIN32)
-#ifdef maths_EXPORTS
-#define MATHSLIB_API __declspec(dllexport)
+#pragma once
+#ifdef ADDER_EXPORTS
+#define ADDER_API __declspec(dllexport)
+#elif defined(ADDER_IMPORTS)
+#define ADDER_API __declspec(dllimport)
 #else
-#define MATHSLIB_API __declspec(dllimport)
+#define ADDER_API
 #endif
-#else
-#define MATHSLIB_API
-#endif
-
-MATHSLIB_API int add(int a, int b);
-
-#endif
+ADDER_API int add(int a,int b);
