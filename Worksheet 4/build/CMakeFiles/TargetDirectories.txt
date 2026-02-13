@@ -1,4 +1,0 @@
-C:/Users/Administrator/EEE/eeee2076/Worksheet 4/build/CMakeFiles/util.dir
-C:/Users/Administrator/EEE/eeee2076/Worksheet 4/build/CMakeFiles/hello.dir
-C:/Users/Administrator/EEE/eeee2076/Worksheet 4/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/Administrator/EEE/eeee2076/Worksheet 4/build/CMakeFiles/ZERO_CHECK.dir
