@@ -66,5 +66,6 @@ vcpkg_installed/
 
 # test output & cache
 Testing/
-.cache/Worksheet5/html/
+Worksheet5/latex/
+Worksheet5/html/
 Worksheet5/latex/
