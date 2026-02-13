@@ -1,25 +1,36 @@
-name: doxygen-deploy
+name: Doxygen Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  deploy-worksheet5:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Install doxygen
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen
 
       - name: Run Doxygen
-        working-directory: "Worksheet5"
+        working-directory: Worksheet5
         run: doxygen
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: "Worksheet5/html"
+          path: Worksheet5/html
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
