@@ -21,8 +21,11 @@ public:
 signals:
     void statusUpdateMessage(const QString& message, int timeout);
 
+public slots:
+    void handleButton();              // Button 1 handler (Exercise 2/3)
+
 private slots:
-    void on_pushButton_2_released(); // Options button
+    void on_pushButton_2_released();  // Options dialog button
 
 private:
     Ui::MainWindow *ui = nullptr;

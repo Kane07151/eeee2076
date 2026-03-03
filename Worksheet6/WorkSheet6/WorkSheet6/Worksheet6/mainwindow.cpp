@@ -2,6 +2,9 @@
 #include "ui_mainwindow.h"
 
 #include <QStatusBar>
+#include <QPushButton>
+#include <QMessageBox>
+
 #include "optiondialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -10,11 +13,15 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Connect our status message signal to the status bar
+    // Exercise 3: connect our signal to the status bar slot
     connect(this, &MainWindow::statusUpdateMessage,
             ui->statusbar, &QStatusBar::showMessage);
 
-    // Create model + link to treeview
+    // Exercise 2: connect Button 1 released() to our slot
+    connect(ui->pushButton, &QPushButton::released,
+            this, &MainWindow::handleButton);
+
+    // Create model + link to treeview (Exercise 4)
     this->partList = new ModelPartList("Parts List", this);
     ui->treeView->setModel(this->partList);
 
@@ -43,6 +50,17 @@ MainWindow::~MainWindow()
     ui = nullptr;
 }
 
+void MainWindow::handleButton()
+{
+    // Exercise 2: show a message box
+    QMessageBox msgBox;
+    msgBox.setText("Button 1 was clicked");
+    msgBox.exec();
+
+    // Exercise 3: show a status bar message too
+    emit statusUpdateMessage("Button 1 clicked", 3000);
+}
+
 void MainWindow::on_pushButton_2_released()
 {
     QModelIndex index = ui->treeView->currentIndex();
@@ -63,7 +81,7 @@ void MainWindow::on_pushButton_2_released()
     if (dialog.exec() == QDialog::Accepted) {
         dialog.applyToModelPart(selectedPart);
 
-        // Update the view by writing via the model (so it emits dataChanged)
+        // Update view via model so it emits dataChanged
         ui->treeView->model()->setData(index.siblingAtColumn(0), selectedPart->data(0));
         ui->treeView->model()->setData(index.siblingAtColumn(1), selectedPart->data(1));
 
