@@ -26,7 +26,7 @@ private slots:
     void on_pushButton_released();     // NEW: Open File Dialog -> change item name
     void on_pushButton_2_released();   // Options dialog button
     void onTreeViewContextMenuRequested(const QPoint& pos); // Context menu
-
+    void on_actionOpenFile_triggered();
 private:
     void openOptionsDialogForIndex(const QModelIndex& index);
 

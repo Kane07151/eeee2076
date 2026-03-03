@@ -140,3 +140,44 @@ void MainWindow::on_pushButton_released()
 
     emit statusUpdateMessage(QString("Loaded: %1").arg(info.fileName()), 4000);
 }
+#include <QFileDialog>
+#include <QFileInfo>
+
+void MainWindow::on_actionOpenFile_triggered()
+{
+    // 1) 必须先选中 tree item
+    QModelIndex index = ui->treeView->currentIndex();
+    if (!index.isValid()) {
+        emit statusUpdateMessage("Select a tree item first", 3000);
+        return;
+    }
+
+    // 2) 打开文件选择框
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open File",
+        "",
+        "All Files (*.*)"
+        );
+
+    if (filePath.isEmpty()) {
+        emit statusUpdateMessage("Open File cancelled", 2000);
+        return;
+    }
+
+    // 3) 用文件名改 item 的名字
+    QFileInfo info(filePath);
+    QString newName = info.fileName();   // 带后缀，老师一眼看得出来自文件
+
+    auto* selectedPart = static_cast<ModelPart*>(index.internalPointer());
+    if (!selectedPart) {
+        emit statusUpdateMessage("Invalid selection", 3000);
+        return;
+    }
+
+    selectedPart->setData(0, newName);
+    ui->treeView->model()->setData(index.siblingAtColumn(0), newName);
+
+    // 4) status bar 提示
+    emit statusUpdateMessage(QString("Loaded: %1").arg(newName), 4000);
+}
