@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QModelIndex>
 
 #include "ModelPartList.h"
 #include "ModelPart.h"
@@ -22,10 +23,14 @@ signals:
     void statusUpdateMessage(const QString& message, int timeout);
 
 public slots:
-    void handleButton();              // Button 1 handler (Exercise 2/3)
+    void handleButton(); // Button 1
 
 private slots:
-    void on_pushButton_2_released();  // Options dialog button
+    void on_pushButton_2_released(); // Optional: keep button 2 for options
+    void onTreeViewContextMenuRequested(const QPoint& pos); // NEW: context menu
+
+private:
+    void openOptionsDialogForIndex(const QModelIndex& index); // helper
 
 private:
     Ui::MainWindow *ui = nullptr;

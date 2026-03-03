@@ -4,6 +4,7 @@
 #include <QStatusBar>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QMenu>
 
 #include "optiondialog.h"
 
@@ -13,19 +14,19 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Exercise 3: connect our signal to the status bar slot
+    // Status bar signal -> status bar slot
     connect(this, &MainWindow::statusUpdateMessage,
             ui->statusbar, &QStatusBar::showMessage);
 
-    // Exercise 2: connect Button 1 released() to our slot
+    // Button 1 -> messagebox + statusbar
     connect(ui->pushButton, &QPushButton::released,
             this, &MainWindow::handleButton);
 
-    // Create model + link to treeview (Exercise 4)
+    // Tree model
     this->partList = new ModelPartList("Parts List", this);
     ui->treeView->setModel(this->partList);
 
-    // Demo tree (3 top-level, each 5 children)
+    // Demo tree
     ModelPart* rootItem = this->partList->getRootItem();
     for (int i = 0; i < 3; i++) {
         QString name = QString("TopLevel %1").arg(i);
@@ -40,8 +41,12 @@ MainWindow::MainWindow(QWidget *parent)
             childItem->appendChild(childChild);
         }
     }
-
     ui->treeView->setColumnWidth(0, 180);
+
+    // ✅ Signoff 4: enable custom context menu on treeview
+    ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->treeView, &QWidget::customContextMenuRequested,
+            this, &MainWindow::onTreeViewContextMenuRequested);
 }
 
 MainWindow::~MainWindow()
@@ -52,18 +57,15 @@ MainWindow::~MainWindow()
 
 void MainWindow::handleButton()
 {
-    // Exercise 2: show a message box
     QMessageBox msgBox;
     msgBox.setText("Button 1 was clicked");
     msgBox.exec();
 
-    // Exercise 3: show a status bar message too
     emit statusUpdateMessage("Button 1 clicked", 3000);
 }
 
-void MainWindow::on_pushButton_2_released()
+void MainWindow::openOptionsDialogForIndex(const QModelIndex& index)
 {
-    QModelIndex index = ui->treeView->currentIndex();
     if (!index.isValid()) {
         emit statusUpdateMessage("No tree item selected", 3000);
         return;
@@ -88,5 +90,32 @@ void MainWindow::on_pushButton_2_released()
         emit statusUpdateMessage("Dialog accepted: item updated", 3000);
     } else {
         emit statusUpdateMessage("Dialog rejected: no changes", 3000);
+    }
+}
+
+void MainWindow::on_pushButton_2_released()
+{
+    // Keep button 2 working (optional)
+    openOptionsDialogForIndex(ui->treeView->currentIndex());
+}
+
+void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
+{
+    // pos is in viewport coordinates
+    QModelIndex index = ui->treeView->indexAt(pos);
+    if (!index.isValid()) {
+        emit statusUpdateMessage("Right-clicked empty area", 2000);
+        return;
+    }
+
+    QMenu menu(this);
+    QAction* actOptions = menu.addAction("Options...");
+
+    // Show at mouse position (global)
+    QAction* chosen = menu.exec(ui->treeView->viewport()->mapToGlobal(pos));
+    if (chosen == actOptions) {
+        // Make sure the clicked item becomes current
+        ui->treeView->setCurrentIndex(index);
+        openOptionsDialogForIndex(index);
     }
 }
