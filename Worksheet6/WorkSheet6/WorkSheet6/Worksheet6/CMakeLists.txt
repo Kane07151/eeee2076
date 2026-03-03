@@ -22,11 +22,15 @@ set(PROJECT_SOURCES
     ModelPart.h
     ModelPartList.cpp
     ModelPartList.h
+    optiondialog.h
+    optiondialog.cpp
+    optiondialog.ui
 )
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Worksheet6
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        optiondialog.h optiondialog.cpp optiondialog.ui
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Worksheet6 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

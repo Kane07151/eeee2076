@@ -22,8 +22,17 @@ public:
     int row() const;
     ModelPart* parentItem() const;
 
+    int red() const;
+    int green() const;
+    int blue() const;
+    void setRGB(int r, int g, int b);
+
 private:
     QList<ModelPart*> m_childItems;
     QVector<QVariant> m_itemData;
     ModelPart* m_parentItem;
+
+    int m_r = 255;
+    int m_g = 255;
+    int m_b = 255;
 };

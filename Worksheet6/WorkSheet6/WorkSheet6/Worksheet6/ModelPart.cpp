@@ -1,5 +1,12 @@
 #include "ModelPart.h"
 
+static int clamp255(int v)
+{
+    if (v < 0) return 0;
+    if (v > 255) return 255;
+    return v;
+}
+
 ModelPart::ModelPart(const QVector<QVariant>& data, ModelPart* parentItem)
     : m_itemData(data), m_parentItem(parentItem)
 {
@@ -55,4 +62,15 @@ int ModelPart::row() const
 ModelPart* ModelPart::parentItem() const
 {
     return m_parentItem;
+}
+
+int ModelPart::red() const { return m_r; }
+int ModelPart::green() const { return m_g; }
+int ModelPart::blue() const { return m_b; }
+
+void ModelPart::setRGB(int r, int g, int b)
+{
+    m_r = clamp255(r);
+    m_g = clamp255(g);
+    m_b = clamp255(b);
 }

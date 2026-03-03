@@ -18,9 +18,14 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void statusUpdateMessage(const QString& message, int timeout);
+
+private slots:
+    void on_pushButton_2_released(); // Options button
+
 private:
     Ui::MainWindow *ui = nullptr;
-
     ModelPartList* partList = nullptr;
 };
 
