@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QIcon>
 
 #include "optiondialog.h"
 
@@ -14,35 +15,62 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Status bar signal -> status bar slot
+    // =========================
+    // 1. Status bar connection
+    // =========================
     connect(this, &MainWindow::statusUpdateMessage,
             ui->statusbar, &QStatusBar::showMessage);
 
-    // Tree model
-    this->partList = new ModelPartList("Parts List", this);
-    ui->treeView->setModel(this->partList);
+    // =========================
+    // 2. Model + TreeView
+    // =========================
+    partList = new ModelPartList("Parts List", this);
+    ui->treeView->setModel(partList);
 
-    // Demo tree
-    ModelPart* rootItem = this->partList->getRootItem();
+    ModelPart* rootItem = partList->getRootItem();
     for (int i = 0; i < 3; i++) {
-        QString name = QString("TopLevel %1").arg(i);
-        QString visible("true");
-        auto* childItem = new ModelPart({name, visible}, rootItem);
-        rootItem->appendChild(childItem);
+        auto* top = new ModelPart(
+            {QString("TopLevel %1").arg(i), QString("true")},
+            rootItem
+            );
+        rootItem->appendChild(top);
 
         for (int j = 0; j < 5; j++) {
-            QString childName = QString("Item %1,%2").arg(i).arg(j);
-            QString childVisible("true");
-            auto* childChild = new ModelPart({childName, childVisible}, childItem);
-            childItem->appendChild(childChild);
+            top->appendChild(
+                new ModelPart(
+                    {QString("Item %1,%2").arg(i).arg(j), QString("true")},
+                    top
+                    )
+                );
         }
     }
+
     ui->treeView->setColumnWidth(0, 180);
 
-    // Signoff 4: enable custom context menu on treeview
+    // =========================
+    // 3. Context menu
+    // =========================
     ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->treeView, &QWidget::customContextMenuRequested,
-            this, &MainWindow::onTreeViewContextMenuRequested);
+    connect(ui->treeView,
+            &QWidget::customContextMenuRequested,
+            this,
+            &MainWindow::onTreeViewContextMenuRequested);
+
+    // =========================
+    // 4. 强制修复工具栏图标
+    // =========================
+    if (ui->toolBar) {
+        ui->toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    }
+
+    if (ui->actionOpenFile) {
+        ui->actionOpenFile->setIcon(
+            QIcon(":/Icons/Icons/fileopen.png")
+            );
+        ui->actionOpenFile->setIconVisibleInMenu(true);
+    }
+
+    emit statusUpdateMessage("Ready", 2000);
 }
 
 MainWindow::~MainWindow()
@@ -51,133 +79,107 @@ MainWindow::~MainWindow()
     ui = nullptr;
 }
 
-void MainWindow::openOptionsDialogForIndex(const QModelIndex& index)
+// ======================================================
+// Open File 功能（老师第 5 部分核心）
+// ======================================================
+
+void MainWindow::on_actionOpenFile_triggered()
 {
+    QModelIndex index = ui->treeView->currentIndex();
     if (!index.isValid()) {
-        emit statusUpdateMessage("No tree item selected", 3000);
+        emit statusUpdateMessage("Select a tree item first", 3000);
         return;
     }
 
-    auto* selectedPart = static_cast<ModelPart*>(index.internalPointer());
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open File",
+        "",
+        "All Files (*.*)"
+        );
+
+    if (filePath.isEmpty()) {
+        emit statusUpdateMessage("Open File cancelled", 2000);
+        return;
+    }
+
+    QFileInfo info(filePath);
+    QString newName = info.fileName();
+
+    auto* selectedPart =
+        static_cast<ModelPart*>(index.internalPointer());
+
     if (!selectedPart) {
         emit statusUpdateMessage("Invalid selection", 3000);
         return;
     }
+
+    selectedPart->setData(0, newName);
+    ui->treeView->model()->setData(
+        index.siblingAtColumn(0),
+        newName
+        );
+
+    emit statusUpdateMessage(
+        QString("Loaded: %1").arg(newName),
+        4000
+        );
+}
+
+// ======================================================
+// 左按钮
+// ======================================================
+
+void MainWindow::on_pushButton_released()
+{
+    emit statusUpdateMessage("Left button clicked", 2000);
+
+    QModelIndex index = ui->treeView->currentIndex();
+    if (!index.isValid())
+        return;
+
+    auto* selectedPart =
+        static_cast<ModelPart*>(index.internalPointer());
+
+    if (!selectedPart)
+        return;
 
     OptionDialog dialog(this);
     dialog.setFromModelPart(selectedPart);
 
     if (dialog.exec() == QDialog::Accepted) {
         dialog.applyToModelPart(selectedPart);
-
-        // Update view via model so it emits dataChanged
-        ui->treeView->model()->setData(index.siblingAtColumn(0), selectedPart->data(0));
-        ui->treeView->model()->setData(index.siblingAtColumn(1), selectedPart->data(1));
-
-        emit statusUpdateMessage("Dialog accepted: item updated", 3000);
-    } else {
-        emit statusUpdateMessage("Dialog rejected: no changes", 3000);
+        emit statusUpdateMessage("Options applied", 3000);
     }
 }
 
+// ======================================================
+// 右按钮
+// ======================================================
+
 void MainWindow::on_pushButton_2_released()
 {
-    // Options button
-    openOptionsDialogForIndex(ui->treeView->currentIndex());
+    emit statusUpdateMessage("Right button clicked", 2000);
 }
+
+// ======================================================
+// 右键菜单
+// ======================================================
 
 void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
 {
     QModelIndex index = ui->treeView->indexAt(pos);
-    if (!index.isValid()) {
-        emit statusUpdateMessage("Right-clicked empty area", 2000);
+    if (!index.isValid())
         return;
-    }
 
     QMenu menu(this);
     QAction* actOptions = menu.addAction("Options...");
 
-    QAction* chosen = menu.exec(ui->treeView->viewport()->mapToGlobal(pos));
+    QAction* chosen =
+        menu.exec(ui->treeView->viewport()->mapToGlobal(pos));
+
     if (chosen == actOptions) {
         ui->treeView->setCurrentIndex(index);
-        openOptionsDialogForIndex(index);
+        on_pushButton_released();
     }
-}
-
-void MainWindow::on_pushButton_released()
-{
-    // ✅ Signoff 5: Open File Dialog -> use selected file to change item name
-    QModelIndex index = ui->treeView->currentIndex();
-    if (!index.isValid()) {
-        emit statusUpdateMessage("Select a tree item first", 3000);
-        return;
-    }
-
-    QString filePath = QFileDialog::getOpenFileName(
-        this,
-        "Open File",
-        "",
-        "All Files (*.*)"
-        );
-
-    if (filePath.isEmpty()) {
-        emit statusUpdateMessage("Open File cancelled", 2000);
-        return;
-    }
-
-    QFileInfo info(filePath);
-    QString newName = info.baseName(); // no extension (clearer for demo)
-
-    auto* selectedPart = static_cast<ModelPart*>(index.internalPointer());
-    if (!selectedPart) {
-        emit statusUpdateMessage("Invalid selection", 3000);
-        return;
-    }
-
-    // Update model data
-    selectedPart->setData(0, newName);
-    ui->treeView->model()->setData(index.siblingAtColumn(0), newName);
-
-    emit statusUpdateMessage(QString("Loaded: %1").arg(info.fileName()), 4000);
-}
-#include <QFileDialog>
-#include <QFileInfo>
-
-void MainWindow::on_actionOpenFile_triggered()
-{
-    // 1) 必须先选中 tree item
-    QModelIndex index = ui->treeView->currentIndex();
-    if (!index.isValid()) {
-        emit statusUpdateMessage("Select a tree item first", 3000);
-        return;
-    }
-
-    // 2) 打开文件选择框
-    QString filePath = QFileDialog::getOpenFileName(
-        this,
-        "Open File",
-        "",
-        "All Files (*.*)"
-        );
-
-    if (filePath.isEmpty()) {
-        emit statusUpdateMessage("Open File cancelled", 2000);
-        return;
-    }
-
-    // 3) 用文件名改 item 的名字
-    QFileInfo info(filePath);
-    QString newName = info.fileName();   // 带后缀，老师一眼看得出来自文件
-
-    auto* selectedPart = static_cast<ModelPart*>(index.internalPointer());
-    if (!selectedPart) {
-        emit statusUpdateMessage("Invalid selection", 3000);
-        return;
-    }
-
-    selectedPart->setData(0, newName);
-    ui->treeView->model()->setData(index.siblingAtColumn(0), newName);
-
-    // 4) status bar 提示
-    emit statusUpdateMessage(QString("Loaded: %1").arg(newName), 4000);
 }

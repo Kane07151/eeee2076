@@ -23,12 +23,15 @@ signals:
     void statusUpdateMessage(const QString& message, int timeout);
 
 private slots:
-    void on_pushButton_released();     // NEW: Open File Dialog -> change item name
-    void on_pushButton_2_released();   // Options dialog button
-    void onTreeViewContextMenuRequested(const QPoint& pos); // Context menu
+    void on_pushButton_released();
+    void on_pushButton_2_released();
+
     void on_actionOpenFile_triggered();
+    void onTreeViewContextMenuRequested(const QPoint& pos);
+
 private:
     void openOptionsDialogForIndex(const QModelIndex& index);
+    void doOpenFileAndRenameSelectedItem();
 
 private:
     Ui::MainWindow *ui = nullptr;
