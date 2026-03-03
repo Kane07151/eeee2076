@@ -1,4 +1,5 @@
 #include "ModelPartList.h"
+#include <QColor>
 
 ModelPartList::ModelPartList(const QString& name, QObject* parent)
     : QAbstractItemModel(parent), m_name(name)
@@ -21,11 +22,21 @@ int ModelPartList::columnCount(const QModelIndex& /*parent*/) const
 QVariant ModelPartList::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid()) return {};
-    if (role != Qt::DisplayRole && role != Qt::EditRole) return {};
 
     auto* item = static_cast<ModelPart*>(index.internalPointer());
     if (!item) return {};
-    return item->data(index.column());
+
+    // 显示文字（Part / Visible）
+    if (role == Qt::DisplayRole || role == Qt::EditRole) {
+        return item->data(index.column());
+    }
+
+    // ✅ 用 RGB 让颜色“看得见”：给 Part 列加背景色
+    if (role == Qt::BackgroundRole && index.column() == 0) {
+        return QColor(item->red(), item->green(), item->blue());
+    }
+
+    return {};
 }
 
 Qt::ItemFlags ModelPartList::flags(const QModelIndex& index) const
@@ -95,7 +106,9 @@ bool ModelPartList::setData(const QModelIndex& index, const QVariant& value, int
 
     bool ok = item->setData(index.column(), value);
     if (ok) {
-        emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
+        // ✅ 让 view 同时刷新 Display + Background（颜色）
+        emit dataChanged(index, index,
+                         {Qt::DisplayRole, Qt::EditRole, Qt::BackgroundRole});
     }
     return ok;
 }
