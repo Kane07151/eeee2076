@@ -22,15 +22,13 @@ public:
 signals:
     void statusUpdateMessage(const QString& message, int timeout);
 
-public slots:
-    void handleButton(); // Button 1
-
 private slots:
-    void on_pushButton_2_released(); // Optional: keep button 2 for options
-    void onTreeViewContextMenuRequested(const QPoint& pos); // NEW: context menu
+    void on_pushButton_released();     // NEW: Open File Dialog -> change item name
+    void on_pushButton_2_released();   // Options dialog button
+    void onTreeViewContextMenuRequested(const QPoint& pos); // Context menu
 
 private:
-    void openOptionsDialogForIndex(const QModelIndex& index); // helper
+    void openOptionsDialogForIndex(const QModelIndex& index);
 
 private:
     Ui::MainWindow *ui = nullptr;

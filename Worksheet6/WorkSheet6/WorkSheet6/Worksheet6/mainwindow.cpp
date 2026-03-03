@@ -2,9 +2,9 @@
 #include "ui_mainwindow.h"
 
 #include <QStatusBar>
-#include <QPushButton>
-#include <QMessageBox>
 #include <QMenu>
+#include <QFileDialog>
+#include <QFileInfo>
 
 #include "optiondialog.h"
 
@@ -17,10 +17,6 @@ MainWindow::MainWindow(QWidget *parent)
     // Status bar signal -> status bar slot
     connect(this, &MainWindow::statusUpdateMessage,
             ui->statusbar, &QStatusBar::showMessage);
-
-    // Button 1 -> messagebox + statusbar
-    connect(ui->pushButton, &QPushButton::released,
-            this, &MainWindow::handleButton);
 
     // Tree model
     this->partList = new ModelPartList("Parts List", this);
@@ -43,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
     ui->treeView->setColumnWidth(0, 180);
 
-    // ✅ Signoff 4: enable custom context menu on treeview
+    // Signoff 4: enable custom context menu on treeview
     ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->treeView, &QWidget::customContextMenuRequested,
             this, &MainWindow::onTreeViewContextMenuRequested);
@@ -53,15 +49,6 @@ MainWindow::~MainWindow()
 {
     delete ui;
     ui = nullptr;
-}
-
-void MainWindow::handleButton()
-{
-    QMessageBox msgBox;
-    msgBox.setText("Button 1 was clicked");
-    msgBox.exec();
-
-    emit statusUpdateMessage("Button 1 clicked", 3000);
 }
 
 void MainWindow::openOptionsDialogForIndex(const QModelIndex& index)
@@ -95,13 +82,12 @@ void MainWindow::openOptionsDialogForIndex(const QModelIndex& index)
 
 void MainWindow::on_pushButton_2_released()
 {
-    // Keep button 2 working (optional)
+    // Options button
     openOptionsDialogForIndex(ui->treeView->currentIndex());
 }
 
 void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
 {
-    // pos is in viewport coordinates
     QModelIndex index = ui->treeView->indexAt(pos);
     if (!index.isValid()) {
         emit statusUpdateMessage("Right-clicked empty area", 2000);
@@ -111,11 +97,46 @@ void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
     QMenu menu(this);
     QAction* actOptions = menu.addAction("Options...");
 
-    // Show at mouse position (global)
     QAction* chosen = menu.exec(ui->treeView->viewport()->mapToGlobal(pos));
     if (chosen == actOptions) {
-        // Make sure the clicked item becomes current
         ui->treeView->setCurrentIndex(index);
         openOptionsDialogForIndex(index);
     }
+}
+
+void MainWindow::on_pushButton_released()
+{
+    // ✅ Signoff 5: Open File Dialog -> use selected file to change item name
+    QModelIndex index = ui->treeView->currentIndex();
+    if (!index.isValid()) {
+        emit statusUpdateMessage("Select a tree item first", 3000);
+        return;
+    }
+
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open File",
+        "",
+        "All Files (*.*)"
+        );
+
+    if (filePath.isEmpty()) {
+        emit statusUpdateMessage("Open File cancelled", 2000);
+        return;
+    }
+
+    QFileInfo info(filePath);
+    QString newName = info.baseName(); // no extension (clearer for demo)
+
+    auto* selectedPart = static_cast<ModelPart*>(index.internalPointer());
+    if (!selectedPart) {
+        emit statusUpdateMessage("Invalid selection", 3000);
+        return;
+    }
+
+    // Update model data
+    selectedPart->setData(0, newName);
+    ui->treeView->model()->setData(index.siblingAtColumn(0), newName);
+
+    emit statusUpdateMessage(QString("Loaded: %1").arg(info.fileName()), 4000);
 }
