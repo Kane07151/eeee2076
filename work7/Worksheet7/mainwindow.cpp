@@ -12,8 +12,6 @@
 #include <vtkRenderer.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkSmartPointer.h>
-#include <vtkCylinderSource.h>
-#include <vtkPolyDataMapper.h>
 #include <vtkActor.h>
 #include <vtkProperty.h>
 
@@ -48,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     ui->treeView->setColumnWidth(0, 180);
+    ui->treeView->expandAll();
 
     ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->treeView,
@@ -62,6 +61,14 @@ MainWindow::MainWindow(QWidget *parent)
     if (ui->actionOpenFile) {
         ui->actionOpenFile->setIcon(QIcon(":/Icons/Icons/fileopen.png"));
         ui->actionOpenFile->setIconVisibleInMenu(true);
+    }
+
+    if (ui->pushButton) {
+        ui->pushButton->setText("Add Child");
+    }
+
+    if (ui->pushButton_2) {
+        ui->pushButton_2->setText("Options");
     }
 
     renderer = vtkSmartPointer<vtkRenderer>::New();
@@ -124,54 +131,93 @@ void MainWindow::on_actionOpenFile_triggered()
     QFileInfo info(filePath);
     QString newName = info.fileName();
 
-    ModelPart* rootItem = partList->getRootItem();
+    QModelIndex currentIndex = ui->treeView->currentIndex();
 
-    auto* newPart = new ModelPart({newName, QString("true")}, rootItem);
+    ModelPart* parentPart = nullptr;
+    if (currentIndex.isValid()) {
+        parentPart = static_cast<ModelPart*>(currentIndex.internalPointer());
+    }
+
+    if (!parentPart) {
+        parentPart = partList->getRootItem();
+    }
+
+    auto* newPart = new ModelPart({newName, QString("true")}, parentPart);
     newPart->loadSTL(filePath);
 
     if (newPart->getActor()) {
-        double xOffset = static_cast<double>(loadedStlCount) * 120.0;
+        int siblingCount = parentPart->childCount();
+        double xOffset = static_cast<double>(siblingCount) * 120.0;
         newPart->getActor()->SetPosition(xOffset, 0.0, 0.0);
     }
 
-    rootItem->appendChild(newPart);
-    loadedStlCount++;
+    parentPart->appendChild(newPart);
 
     ui->treeView->reset();
     ui->treeView->expandAll();
 
     refreshRender();
 
-    emit statusUpdateMessage(QString("Loaded STL: %1").arg(newName), 4000);
+    emit statusUpdateMessage(
+        QString("Loaded STL under selected item: %1").arg(newName),
+        4000
+        );
 }
 
 void MainWindow::on_pushButton_released()
 {
-    emit statusUpdateMessage("Left button clicked", 2000);
+    QModelIndex currentIndex = ui->treeView->currentIndex();
 
+    ModelPart* parentPart = nullptr;
+    if (currentIndex.isValid()) {
+        parentPart = static_cast<ModelPart*>(currentIndex.internalPointer());
+    }
+
+    if (!parentPart) {
+        parentPart = partList->getRootItem();
+    }
+
+    int childNumber = parentPart->childCount();
+    QString childName = QString("New Child %1").arg(childNumber);
+
+    auto* newPart = new ModelPart({childName, QString("true")}, parentPart);
+    parentPart->appendChild(newPart);
+
+    ui->treeView->reset();
+    ui->treeView->expandAll();
+
+    emit statusUpdateMessage(
+        QString("Added child item under: %1")
+            .arg(parentPart->data(0).toString()),
+        3000
+        );
+}
+
+void MainWindow::on_pushButton_2_released()
+{
     QModelIndex index = ui->treeView->currentIndex();
-    if (!index.isValid())
+    if (!index.isValid()) {
+        emit statusUpdateMessage("Select a tree item first", 3000);
         return;
+    }
 
     auto* selectedPart =
         static_cast<ModelPart*>(index.internalPointer());
 
-    if (!selectedPart)
+    if (!selectedPart) {
+        emit statusUpdateMessage("Invalid selection", 3000);
         return;
+    }
 
     OptionDialog dialog(this);
     dialog.setFromModelPart(selectedPart);
 
     if (dialog.exec() == QDialog::Accepted) {
         dialog.applyToModelPart(selectedPart);
+        ui->treeView->reset();
         refreshRender();
         emit statusUpdateMessage("Options applied", 3000);
     }
-}
-
-void MainWindow::on_pushButton_2_released()
-{
-    emit statusUpdateMessage("Right button clicked", 2000);
 }
 
 void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
@@ -188,6 +234,6 @@ void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
 
     if (chosen == actOptions) {
         ui->treeView->setCurrentIndex(index);
-        on_pushButton_released();
+        on_pushButton_2_released();
     }
 }
