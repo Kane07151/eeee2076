@@ -43,6 +43,8 @@ private:
 
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> renderWindow;
+
+    int loadedStlCount = 0;
 };
 
 #endif // MAINWINDOW_H

@@ -70,23 +70,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->vtkWidget->setRenderWindow(renderWindow);
     renderWindow->AddRenderer(renderer);
 
-    vtkSmartPointer<vtkCylinderSource> cylinder =
-        vtkSmartPointer<vtkCylinderSource>::New();
-    cylinder->SetResolution(24);
-    cylinder->SetRadius(1.0);
-    cylinder->SetHeight(2.0);
-    cylinder->Update();
-
-    vtkSmartPointer<vtkPolyDataMapper> mapper =
-        vtkSmartPointer<vtkPolyDataMapper>::New();
-    mapper->SetInputConnection(cylinder->GetOutputPort());
-
-    vtkSmartPointer<vtkActor> actor =
-        vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper(mapper);
-    actor->GetProperty()->SetColor(1.0, 0.0, 0.0);
-
-    renderer->AddActor(actor);
     renderer->SetBackground(0.1, 0.2, 0.4);
     renderer->ResetCamera();
 
@@ -145,7 +128,14 @@ void MainWindow::on_actionOpenFile_triggered()
 
     auto* newPart = new ModelPart({newName, QString("true")}, rootItem);
     newPart->loadSTL(filePath);
+
+    if (newPart->getActor()) {
+        double xOffset = static_cast<double>(loadedStlCount) * 120.0;
+        newPart->getActor()->SetPosition(xOffset, 0.0, 0.0);
+    }
+
     rootItem->appendChild(newPart);
+    loadedStlCount++;
 
     ui->treeView->reset();
     ui->treeView->expandAll();
