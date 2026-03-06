@@ -34,8 +34,8 @@ private slots:
     void onTreeViewContextMenuRequested(const QPoint& pos);
 
 private:
-    void openOptionsDialogForIndex(const QModelIndex& index);
-    void doOpenFileAndRenameSelectedItem();
+    void refreshRender();
+    void addActorsFromTree(ModelPart* item);
 
 private:
     Ui::MainWindow *ui = nullptr;

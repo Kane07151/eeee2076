@@ -23,15 +23,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // =========================
-    // 1. Status bar connection
-    // =========================
     connect(this, &MainWindow::statusUpdateMessage,
             ui->statusbar, &QStatusBar::showMessage);
 
-    // =========================
-    // 2. Model + TreeView
-    // =========================
     partList = new ModelPartList("Parts List", this);
     ui->treeView->setModel(partList);
 
@@ -55,32 +49,21 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->treeView->setColumnWidth(0, 180);
 
-    // =========================
-    // 3. Context menu
-    // =========================
     ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->treeView,
             &QWidget::customContextMenuRequested,
             this,
             &MainWindow::onTreeViewContextMenuRequested);
 
-    // =========================
-    // 4. 工具栏图标
-    // =========================
     if (ui->toolBar) {
         ui->toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     }
 
     if (ui->actionOpenFile) {
-        ui->actionOpenFile->setIcon(
-            QIcon(":/Icons/Icons/fileopen.png")
-            );
+        ui->actionOpenFile->setIcon(QIcon(":/Icons/Icons/fileopen.png"));
         ui->actionOpenFile->setIconVisibleInMenu(true);
     }
 
-    // =========================
-    // 5. VTK 渲染窗口
-    // =========================
     renderer = vtkSmartPointer<vtkRenderer>::New();
     renderWindow = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
 
@@ -118,23 +101,36 @@ MainWindow::~MainWindow()
     ui = nullptr;
 }
 
-// ======================================================
-// Open File 功能
-// ======================================================
-
-void MainWindow::on_actionOpenFile_triggered()
+void MainWindow::refreshRender()
 {
-    QModelIndex index = ui->treeView->currentIndex();
-    if (!index.isValid()) {
-        emit statusUpdateMessage("Select a tree item first", 3000);
+    renderer->RemoveAllViewProps();
+    addActorsFromTree(partList->getRootItem());
+    renderer->ResetCamera();
+    ui->vtkWidget->renderWindow()->Render();
+}
+
+void MainWindow::addActorsFromTree(ModelPart* item)
+{
+    if (!item) {
         return;
     }
 
+    if (item->getActor() && item->isVisible()) {
+        renderer->AddActor(item->getActor());
+    }
+
+    for (int i = 0; i < item->childCount(); ++i) {
+        addActorsFromTree(item->child(i));
+    }
+}
+
+void MainWindow::on_actionOpenFile_triggered()
+{
     QString filePath = QFileDialog::getOpenFileName(
         this,
-        "Open File",
+        "Open STL File",
         "",
-        "All Files (*.*)"
+        "STL Files (*.stl)"
         );
 
     if (filePath.isEmpty()) {
@@ -145,29 +141,19 @@ void MainWindow::on_actionOpenFile_triggered()
     QFileInfo info(filePath);
     QString newName = info.fileName();
 
-    auto* selectedPart =
-        static_cast<ModelPart*>(index.internalPointer());
+    ModelPart* rootItem = partList->getRootItem();
 
-    if (!selectedPart) {
-        emit statusUpdateMessage("Invalid selection", 3000);
-        return;
-    }
+    auto* newPart = new ModelPart({newName, QString("true")}, rootItem);
+    newPart->loadSTL(filePath);
+    rootItem->appendChild(newPart);
 
-    selectedPart->setData(0, newName);
-    ui->treeView->model()->setData(
-        index.siblingAtColumn(0),
-        newName
-        );
+    ui->treeView->reset();
+    ui->treeView->expandAll();
 
-    emit statusUpdateMessage(
-        QString("Loaded: %1").arg(newName),
-        4000
-        );
+    refreshRender();
+
+    emit statusUpdateMessage(QString("Loaded STL: %1").arg(newName), 4000);
 }
-
-// ======================================================
-// 左按钮
-// ======================================================
 
 void MainWindow::on_pushButton_released()
 {
@@ -188,22 +174,15 @@ void MainWindow::on_pushButton_released()
 
     if (dialog.exec() == QDialog::Accepted) {
         dialog.applyToModelPart(selectedPart);
+        refreshRender();
         emit statusUpdateMessage("Options applied", 3000);
     }
 }
-
-// ======================================================
-// 右按钮
-// ======================================================
 
 void MainWindow::on_pushButton_2_released()
 {
     emit statusUpdateMessage("Right button clicked", 2000);
 }
-
-// ======================================================
-// 右键菜单
-// ======================================================
 
 void MainWindow::onTreeViewContextMenuRequested(const QPoint& pos)
 {
